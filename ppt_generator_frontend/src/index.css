@@ -113,6 +113,12 @@ textarea {
   justify-content: space-between;
 }
 
+.op-card-header--grad {
+  background: var(--op-grad-header);
+  border-top-left-radius: var(--op-radius);
+  border-top-right-radius: var(--op-radius);
+}
+
 .op-card-title {
   margin: 0;
   font-size: 14px;
@@ -255,6 +261,90 @@ textarea {
   color: var(--op-text);
 }
 
+/* Accessible focus rings (keyboard visible) */
+.op-btn:focus-visible,
+.op-input:focus-visible,
+.op-select:focus-visible,
+.op-textarea:focus-visible,
+a.op-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--op-ring);
+}
+
+/* DownloadCard: header + badge */
+.op-download-header {
+  display: grid;
+  gap: 4px;
+}
+
+.op-download-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.op-download-subtitle {
+  font-size: 12.5px;
+  color: var(--op-text-muted);
+  line-height: 1.35;
+}
+
+.op-icon-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  color: rgba(37, 99, 235, 1);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.op-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  border: 1px solid var(--op-border);
+}
+
+.op-pill-success {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.28);
+  color: #7c2d12;
+}
+
+/* DownloadCard: button styles (requested primary solid + outline) */
+.op-btn-primary-solid {
+  background: var(--op-primary);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+}
+
+.op-btn-primary-solid:hover:not(:disabled) {
+  background: rgba(29, 78, 216, 1); /* hover darken while staying in primary family */
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.26);
+}
+
+.op-btn-outline-primary {
+  background: transparent;
+  border: 1px solid rgba(37, 99, 235, 0.55);
+  color: rgba(37, 99, 235, 1);
+}
+
+.op-btn-outline-primary:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.06);
+  transform: translateY(-1px);
+}
+
 .op-btn-danger {
   background: rgba(239, 68, 68, 0.1);
   color: #7f1d1d;
@@ -357,44 +447,86 @@ textarea {
   border-radius: 14px;
   border: 1px solid rgba(37, 99, 235, 0.18);
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.06), rgba(245, 158, 11, 0.05));
-  padding: 14px;
+  padding: 16px; /* requested: 16px inside card/panel */
 }
 
 .op-ready-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-}
-
-.op-ready-title {
-  font-size: 13px;
-  font-weight: 750;
-  letter-spacing: -0.01em;
+  gap: 12px; /* requested: 12px between sections */
+  flex-wrap: wrap;
 }
 
 .op-ready-meta {
   font-size: 12px;
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
   align-items: center;
 }
 
-.op-ready-filename {
+.op-ready-meta > * {
+  position: relative;
+}
+
+.op-ready-meta > *:not(:first-child)::before {
+  content: "•";
+  margin-right: 8px;
+  color: rgba(107, 114, 128, 0.9);
+}
+
+.op-meta-label {
   font-weight: 650;
   color: rgba(17, 24, 39, 0.9);
-  max-width: 240px;
+}
+
+.op-ready-filename {
+  font-weight: 750;
+  color: rgba(17, 24, 39, 0.92);
+  max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* Right-align buttons on desktop; stack on mobile */
+.op-ready-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-left: auto;
+}
+
+@media (max-width: 540px) {
+  .op-ready-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .op-ready-filename {
+    max-width: 100%;
+  }
+}
+
 .op-ready-link-controls {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   gap: 10px;
   align-items: center;
+}
+
+@media (max-width: 540px) {
+  .op-ready-link-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .op-ready-link-controls .op-btn,
+  .op-ready-link-controls a.op-btn {
+    width: 100%;
+  }
 }
 
 .op-ready-link {

@@ -34,15 +34,15 @@ export function DownloadCard({
     if (!ts) return "";
     const deltaMs = Date.now() - ts;
 
-    if (deltaMs < 15_000) return "Generated just now";
+    if (deltaMs < 15_000) return "just now";
     const minutes = Math.floor(deltaMs / 60_000);
-    if (minutes < 60) return `Generated ${minutes} min ago`;
+    if (minutes < 60) return `${minutes} min ago`;
 
     const hours = Math.floor(deltaMs / 3_600_000);
-    if (hours < 24) return `Generated ${hours} hr ago`;
+    if (hours < 24) return `${hours} hr ago`;
 
     const days = Math.floor(deltaMs / 86_400_000);
-    return `Generated ${days} day${days === 1 ? "" : "s"} ago`;
+    return `${days} day${days === 1 ? "" : "s"} ago`;
   }, [file?.generatedAt]);
 
   const handleCopyLink = useCallback(async () => {
@@ -57,59 +57,81 @@ export function DownloadCard({
     }
   }, [file?.url]);
 
+  const fileNameShort = useMemo(() => {
+    const name = String(file?.filename || "presentation.pptx");
+    return name;
+  }, [file?.filename]);
+
   return (
     <div className="op-card op-download-card" aria-live="polite">
-      <div className="op-card-header">
-        <h2 className="op-card-title">Download</h2>
-        {file?.url ? <span className="op-chip">Ready to download</span> : <span className="op-chip">Not ready</span>}
+      <div className="op-card-header op-card-header--grad">
+        <div className="op-download-header">
+          <div className="op-download-title-row">
+            <span className="op-icon-check" aria-hidden="true">
+              ✓
+            </span>
+            <h2 className="op-card-title" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              Ready to download
+            </h2>
+            <span className="op-pill op-pill-success" aria-label="Status: Ready">
+              Ready
+            </span>
+          </div>
+          <div className="op-download-subtitle">Your presentation is generated and ready.</div>
+        </div>
+
+        {file?.url ? <span className="op-chip">Available</span> : <span className="op-chip">Not ready</span>}
       </div>
 
       <div className="op-card-body">
         {file?.url ? (
           <div className="op-ready-panel" role="region" aria-label="Ready to download">
             <div className="op-ready-top">
-              <div style={{ display: "grid", gap: 2 }}>
-                <div className="op-ready-title">Ready to download</div>
-                <div className="op-ready-meta">
-                  <span className="op-ready-filename" title={file?.filename || ""}>
-                    {file?.filename || "presentation.pptx"}
+              <div className="op-ready-meta" aria-label="File metadata">
+                <span
+                  className="op-ready-filename"
+                  title={fileNameShort}
+                  aria-label={`Filename: ${fileNameShort}`}
+                >
+                  {fileNameShort}
+                </span>
+
+                {approxSize ? (
+                  <span className="op-muted" aria-label={`Size: ${approxSize}`}>
+                    <span className="op-meta-label">Size:</span> {approxSize}
                   </span>
-                  {approxSize ? <span className="op-muted">• {approxSize}</span> : null}
-                  {timeText ? <span className="op-muted">• {timeText}</span> : null}
-                </div>
+                ) : null}
+
+                {timeText ? (
+                  <span className="op-muted" aria-label={`Generated: ${timeText}`}>
+                    <span className="op-meta-label">Generated:</span> {timeText}
+                  </span>
+                ) : null}
               </div>
 
-              <button
-                type="button"
-                className="op-btn op-btn-secondary"
-                onClick={onRegenerate}
-                disabled={isGenerating}
-                title="Generate a fresh PPTX with the current inputs"
-              >
-                Regenerate
-              </button>
-            </div>
+              <div className="op-ready-actions">
+                <button
+                  type="button"
+                  className="op-btn op-btn-outline-primary"
+                  onClick={onRegenerate}
+                  disabled={isGenerating}
+                  aria-label="Regenerate presentation"
+                  title="Generate a fresh PPTX with the current inputs"
+                >
+                  Regenerate
+                </button>
 
-            <div className="op-row" style={{ marginTop: 12 }}>
-              <button
-                type="button"
-                className="op-btn op-btn-primary"
-                onClick={onDownload}
-                disabled={!canDownload}
-                aria-disabled={!canDownload}
-              >
-                Download PPT
-              </button>
-
-              <a
-                className="op-btn op-btn-ghost"
-                href={file.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Open the file URL in a new tab (fallback)"
-              >
-                Open link
-              </a>
+                <button
+                  type="button"
+                  className="op-btn op-btn-primary-solid"
+                  onClick={onDownload}
+                  disabled={!canDownload}
+                  aria-disabled={!canDownload}
+                  aria-label="Download PPT"
+                >
+                  Download PPT
+                </button>
+              </div>
             </div>
 
             <div className="op-ready-link-row" style={{ marginTop: 12 }}>
@@ -123,16 +145,29 @@ export function DownloadCard({
                   readOnly
                   value={file.url}
                   onFocus={(e) => e.target.select()}
+                  aria-label="Generated file link (fallback)"
                 />
                 <button
                   type="button"
                   className="op-btn op-btn-ghost"
                   onClick={handleCopyLink}
                   disabled={!file?.url}
+                  aria-label="Copy fallback link to clipboard"
                   title="Copy link to clipboard"
                 >
                   {copied ? "Copied" : "Copy"}
                 </button>
+
+                <a
+                  className="op-btn op-btn-ghost"
+                  href={file.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open generated file link in a new tab"
+                  title="Open the file URL in a new tab (fallback)"
+                >
+                  Open link
+                </a>
               </div>
               <div className="op-help">
                 If your browser blocks automatic downloads, use <strong>Open link</strong> or copy this link.
@@ -149,7 +184,13 @@ export function DownloadCard({
               <div className="op-error" role="alert" style={{ marginTop: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                   <span>{downloadError}</span>
-                  <button type="button" className="op-btn op-btn-ghost" onClick={onDownload} disabled={!canDownload}>
+                  <button
+                    type="button"
+                    className="op-btn op-btn-ghost"
+                    onClick={onDownload}
+                    disabled={!canDownload}
+                    aria-label="Retry download"
+                  >
                     Retry
                   </button>
                 </div>
