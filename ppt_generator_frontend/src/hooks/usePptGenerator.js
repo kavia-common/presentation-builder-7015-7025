@@ -18,8 +18,9 @@ export function usePptGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progressText, setProgressText] = useState("");
   const [error, setError] = useState("");
+  const [downloadError, setDownloadError] = useState("");
 
-  // Stored output (object URL + filename) for download.
+  // Stored output (object URL + filename + optional metadata) for download.
   const [generatedFile, setGeneratedFile] = useState(() => loadPptCache());
 
   // Keep track of the current in-memory URL so we can revoke on regenerate/reset/unmount.
@@ -28,6 +29,7 @@ export function usePptGenerator() {
   const resetStatus = useCallback(() => {
     setError("");
     setProgressText("");
+    setDownloadError("");
   }, []);
 
   const clearGenerated = useCallback(() => {
@@ -91,7 +93,12 @@ export function usePptGenerator() {
         if (oldUrl) revokeObjectUrlSafe(oldUrl);
 
         const url = URL.createObjectURL(blob);
-        const next = { url, filename };
+        const next = {
+          url,
+          filename,
+          sizeBytes: blob.size,
+          generatedAt: Date.now(),
+        };
 
         activeUrlRef.current = url;
         setGeneratedFile(next);
@@ -116,28 +123,49 @@ export function usePptGenerator() {
     const file = generatedFile || loadPptCache();
     if (!file?.url) {
       const msg = "No generated PPT available. Click “Generate PPT” first.";
-      setError(msg);
+      setDownloadError(msg);
       return { ok: false, error: msg };
     }
 
+    const filename = file.filename || "presentation.pptx";
+
     try {
       // Reliable download via programmatic anchor click.
-      // (FileSaver is fine too, but this works well with object URLs and avoids extra work.)
+      // Some browsers / extensions may block synthetic clicks; we provide a fallback to open the URL.
       const a = document.createElement("a");
       a.href = file.url;
-      a.download = file.filename || "presentation.pptx";
+      a.download = filename;
       a.rel = "noopener";
+      a.style.display = "none";
       document.body.appendChild(a);
-      a.click();
-      a.remove();
+
+      let clicked = false;
+      try {
+        a.click();
+        clicked = true;
+      } finally {
+        a.remove();
+      }
+
+      // Fallback: open in a new tab if browser blocks download click.
+      // We do this only if the click may have been blocked OR if users explicitly need it.
+      if (!clicked) {
+        const opened = window.open(file.url, "_blank", "noopener,noreferrer");
+        if (!opened) {
+          throw new Error("Your browser blocked the download. Please allow pop-ups or use the link below.");
+        }
+      }
 
       setProgressText("Download started.");
       window.setTimeout(() => setProgressText(""), 1200);
 
       return { ok: true };
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to start download.";
-      setError(msg);
+      const msg =
+        e instanceof Error
+          ? e.message
+          : "We couldn’t start the download. Please try again, or use the link to open the file.";
+      setDownloadError(msg);
       return { ok: false, error: msg };
     }
   }, [generatedFile, resetStatus]);
@@ -147,6 +175,7 @@ export function usePptGenerator() {
       isGenerating,
       progressText,
       error,
+      downloadError,
       generatedFile,
       hasGenerated: Boolean(generatedFile?.url),
       generate,
@@ -154,7 +183,7 @@ export function usePptGenerator() {
       resetStatus,
       clearGenerated,
     }),
-    [isGenerating, progressText, error, generatedFile, generate, download, resetStatus, clearGenerated]
+    [isGenerating, progressText, error, downloadError, generatedFile, generate, download, resetStatus, clearGenerated]
   );
 
   return api;

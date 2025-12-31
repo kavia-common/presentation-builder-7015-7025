@@ -85,11 +85,12 @@ function App() {
               isGenerating={generator.isGenerating}
               progressText={generator.progressText}
               error={generator.error}
+              downloadError={generator.downloadError}
+              generatedFile={generator.generatedFile}
               onGenerate={handleGenerate}
               onDownload={handleDownload}
               onReset={handleReset}
               canGenerate={canGenerate}
-              canDownload={canDownload}
               statusText={statusText}
             />
           </aside>

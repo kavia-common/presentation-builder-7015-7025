@@ -14,7 +14,7 @@ const CACHE_KEY = "ppt_generator_generated_ppt_v1";
 /**
  * PUBLIC_INTERFACE
  * Loads the cached PPT download info from sessionStorage.
- * @returns {{ url: string, filename: string } | null}
+ * @returns {{ url: string, filename: string, sizeBytes?: number, generatedAt?: number } | null}
  */
 export function loadPptCache() {
   try {
@@ -22,7 +22,11 @@ export function loadPptCache() {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed.url !== "string" || typeof parsed.filename !== "string") return null;
-    return { url: parsed.url, filename: parsed.filename };
+
+    const sizeBytes = typeof parsed.sizeBytes === "number" ? parsed.sizeBytes : undefined;
+    const generatedAt = typeof parsed.generatedAt === "number" ? parsed.generatedAt : undefined;
+
+    return { url: parsed.url, filename: parsed.filename, sizeBytes, generatedAt };
   } catch {
     return null;
   }
@@ -31,7 +35,7 @@ export function loadPptCache() {
 /**
  * PUBLIC_INTERFACE
  * Saves the PPT download info to sessionStorage.
- * @param {{ url: string, filename: string }} value
+ * @param {{ url: string, filename: string, sizeBytes?: number, generatedAt?: number }} value
  */
 export function savePptCache(value) {
   try {
