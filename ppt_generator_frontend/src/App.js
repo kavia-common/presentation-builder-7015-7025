@@ -1,47 +1,90 @@
-import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useCallback, useMemo } from "react";
+import { saveAs } from "file-saver";
+import "./App.css";
+
+import { PresentationForm } from "./components/PresentationForm";
+import { OptionsPanel } from "./components/OptionsPanel";
+import { PreviewSummary } from "./components/PreviewSummary";
+import { Toolbar } from "./components/Toolbar";
+
+import { useLocalStorage } from "./hooks/useLocalStorage";
+import { usePptGenerator } from "./hooks/usePptGenerator";
+
+import { getInitialState, STORAGE_KEY, sanitizePresentationState } from "./utils/defaults";
+import { kebabCase } from "./utils/format";
 
 // PUBLIC_INTERFACE
 function App() {
-  const [theme, setTheme] = useState('light');
+  const [state, setState] = useLocalStorage(STORAGE_KEY, getInitialState, { debounceMs: 350 });
+  const generator = usePptGenerator();
 
-  // Effect to apply theme to document element
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+  const setContent = (content) => setState({ ...state, content });
+  const setOptions = (options) => setState({ ...state, options });
+
+  const { content, options } = state;
+
+  const canGenerate = useMemo(() => {
+    const { errors } = sanitizePresentationState(state);
+    return errors.length === 0;
+  }, [state]);
 
   // PUBLIC_INTERFACE
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
-  };
+  const handleReset = useCallback(() => {
+    generator.resetStatus();
+    setState(getInitialState());
+  }, [generator, setState]);
+
+  // PUBLIC_INTERFACE
+  const handleGenerate = useCallback(async () => {
+    const result = await generator.generate(state);
+    if (!result?.ok || !result?.blob) return;
+
+    const nameBase = kebabCase(content.title) || "presentation";
+    saveAs(result.blob, `${nameBase}.pptx`);
+  }, [generator, state, content.title]);
 
   return (
     <div className="App">
-      <header className="App-header">
-        <button 
-          className="theme-toggle" 
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-        >
-          {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
-        </button>
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <p>
-          Current theme: <strong>{theme}</strong>
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <div className="op-container">
+        <header className="op-topbar">
+          <h1 className="op-title">PPT Generator</h1>
+          <p className="op-subtitle">
+            Build a title slide, optional agenda slide, and content slides with bullets — then generate a .pptx entirely in the browser (with seamless backend fallback if configured).
+          </p>
+        </header>
+
+        <main className="op-layout">
+          <section style={{ display: "grid", gap: 18 }}>
+            <PresentationForm
+              value={content}
+              onChange={setContent}
+              defaultLayout={options.defaultLayout}
+            />
+          </section>
+
+          <aside className="op-sticky" style={{ display: "grid", gap: 18, alignSelf: "start" }}>
+            <OptionsPanel value={options} onChange={setOptions} />
+
+            <div className="op-card">
+              <div className="op-card-header">
+                <h2 className="op-card-title">Preview summary</h2>
+              </div>
+              <div className="op-card-body">
+                <PreviewSummary content={content} options={options} />
+              </div>
+            </div>
+
+            <Toolbar
+              isGenerating={generator.isGenerating}
+              progressText={generator.progressText}
+              error={generator.error}
+              onGenerate={handleGenerate}
+              onReset={handleReset}
+              canGenerate={canGenerate}
+            />
+          </aside>
+        </main>
+      </div>
     </div>
   );
 }
