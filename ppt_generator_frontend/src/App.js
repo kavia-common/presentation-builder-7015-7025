@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo } from "react";
-import { saveAs } from "file-saver";
 import "./App.css";
 
 import { PresentationForm } from "./components/PresentationForm";
@@ -28,20 +27,31 @@ function App() {
     return errors.length === 0;
   }, [state]);
 
+  const canDownload = Boolean(generator.generatedFile?.url);
+
+  const statusText = useMemo(() => {
+    if (generator.isGenerating) return "Working...";
+    if (canDownload) return "Ready to download";
+    return "Ready";
+  }, [generator.isGenerating, canDownload]);
+
   // PUBLIC_INTERFACE
   const handleReset = useCallback(() => {
     generator.resetStatus();
+    generator.clearGenerated();
     setState(getInitialState());
   }, [generator, setState]);
 
   // PUBLIC_INTERFACE
   const handleGenerate = useCallback(async () => {
-    const result = await generator.generate(state);
-    if (!result?.ok || !result?.blob) return;
-
     const nameBase = kebabCase(content.title) || "presentation";
-    saveAs(result.blob, `${nameBase}.pptx`);
+    await generator.generate(state, { filename: `${nameBase}.pptx` });
   }, [generator, state, content.title]);
+
+  // PUBLIC_INTERFACE
+  const handleDownload = useCallback(() => {
+    generator.download();
+  }, [generator]);
 
   return (
     <div className="App">
@@ -49,17 +59,14 @@ function App() {
         <header className="op-topbar">
           <h1 className="op-title">PPT Generator</h1>
           <p className="op-subtitle">
-            Build a title slide, optional agenda slide, and content slides with bullets — then generate a .pptx entirely in the browser (with seamless backend fallback if configured).
+            Build a title slide, optional agenda slide, and content slides with bullets — then generate a .pptx entirely in
+            the browser (with seamless backend fallback if configured).
           </p>
         </header>
 
         <main className="op-layout">
           <section style={{ display: "grid", gap: 18 }}>
-            <PresentationForm
-              value={content}
-              onChange={setContent}
-              defaultLayout={options.defaultLayout}
-            />
+            <PresentationForm value={content} onChange={setContent} defaultLayout={options.defaultLayout} />
           </section>
 
           <aside className="op-sticky" style={{ display: "grid", gap: 18, alignSelf: "start" }}>
@@ -79,8 +86,11 @@ function App() {
               progressText={generator.progressText}
               error={generator.error}
               onGenerate={handleGenerate}
+              onDownload={handleDownload}
               onReset={handleReset}
               canGenerate={canGenerate}
+              canDownload={canDownload}
+              statusText={statusText}
             />
           </aside>
         </main>

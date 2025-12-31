@@ -2,16 +2,21 @@ import React from "react";
 
 /**
  * PUBLIC_INTERFACE
- * Right panel CTA: progress, errors, reset and generate actions.
+ * Right panel CTA: progress, errors, reset, generate and download actions.
  */
 export function Toolbar({
   isGenerating,
   progressText,
   error,
   onGenerate,
+  onDownload,
   onReset,
   canGenerate,
+  canDownload,
+  statusText,
 }) {
+  const chipText = isGenerating ? "Working..." : statusText || "Ready";
+
   return (
     <div className="op-card">
       <div className="op-card-header">
@@ -27,7 +32,7 @@ export function Toolbar({
               display: "inline-block",
             }}
           />
-          <span>{isGenerating ? "Working..." : "Ready"}</span>
+          <span>{chipText}</span>
         </span>
       </div>
 
@@ -44,10 +49,17 @@ export function Toolbar({
           </div>
         ) : null}
 
+        {!canDownload && !isGenerating ? (
+          <div className="op-help" style={{ marginBottom: 12 }}>
+            No generated file yet. Click <strong>Generate PPT</strong> to prepare a download.
+          </div>
+        ) : null}
+
         <div className="op-row" style={{ marginBottom: 12 }}>
           <button type="button" className="op-btn op-btn-secondary" onClick={onReset} disabled={isGenerating}>
             Reset
           </button>
+
           <button
             type="button"
             className="op-btn op-btn-primary"
@@ -55,7 +67,17 @@ export function Toolbar({
             disabled={!canGenerate || isGenerating}
             style={{ flex: 1 }}
           >
-            {isGenerating ? "Generating..." : "Generate & Download PPT"}
+            {isGenerating ? "Generating..." : "Generate PPT"}
+          </button>
+
+          <button
+            type="button"
+            className="op-btn op-btn-ghost"
+            onClick={onDownload}
+            disabled={!canDownload || isGenerating}
+            title={!canDownload ? "Generate a PPT first" : "Download the generated PPT"}
+          >
+            Download PPT
           </button>
         </div>
 
